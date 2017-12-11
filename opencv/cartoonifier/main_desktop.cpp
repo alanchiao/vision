@@ -1,4 +1,5 @@
 #include "opencv2/opencv.hpp"
+#include "cartoon.h"
 
 #if !defined VK_ESCAPE
     #define VK_ESCAPE 0x1B
@@ -30,10 +31,8 @@ int main(int argc, char *argv[])
         }
 
         cv::Mat displayed(frame.size(), CV_8UC3);
-
-        // cartoonifyImage(frame, displayed);
-
-        imshow("Cartoonifier", frame);
+        cartoonifyImage(frame, displayed);
+        imshow("Cartoonifier", displayed);
 
         char keypress = cv::waitKey(1000/50);
         if (keypress == VK_ESCAPE) {
