@@ -7,41 +7,50 @@ using namespace std;
 
 void cartoonifyImage(Mat srcColor, Mat dst) 
 {
+    const int MEDIAN_BLUR_FILTER_SIZE = 7;
+    const int LAPLACIAN_FILTER_SIZE = 5;
+    const int EDGES_THRESHOLD = 80;
+
     Size size = srcColor.size();
-    Mat gray;
+    Mat gray = Mat(size, CV_8U);
     cvtColor(srcColor, gray, CV_BGR2GRAY);
 
     // 1. Reduce noise.
-    const int MEDIAN_BLUR_FILTER_SIZE = 7;
     medianBlur(gray, gray, MEDIAN_BLUR_FILTER_SIZE);
 
     // 2. Edge detection.
     Mat edges = Mat(size, CV_8U);
-    const int LAPLACIAN_FILTER_SIZE = 5;
     Laplacian(gray, edges, CV_8U, LAPLACIAN_FILTER_SIZE);
 
     Mat mask = Mat(size, CV_8U);
-    const int EDGES_THRESHOLD = 80;
     threshold(edges, mask, EDGES_THRESHOLD, 255, THRESH_BINARY_INV);
     imshow("No Noise Removed Mask", mask);
     removePepperNoise(mask);
     imshow("Cartoonifier Mask", mask);
 
-    // 3. Cartoon effects
-    Mat tmp = Mat(size, CV_8UC3);
+    // 3. Cartoon effects. Reduce resolution to optimize performance.
+    Size smallSize;
+    smallSize.width = size.width/2;
+    smallSize.height = size.height/2;
+    Mat smallImg = Mat(smallSize, CV_8UC3);
+    resize(srcColor, smallImg, smallSize, 0, 0, INTER_LINEAR);
+
+    Mat tmp = Mat(smallSize, CV_8UC3);
     const int repetitions = 7;
     for (int i = 0; i < repetitions; i++) {
         int ksize = 9;
         double sigmaColor = 9;
         double sigmaSpace = 7;
-        bilateralFilter(srcColor, tmp, ksize, sigmaColor, sigmaSpace);
-        bilateralFilter(tmp, srcColor, ksize, sigmaColor, sigmaSpace);
+        bilateralFilter(smallImg, tmp, ksize, sigmaColor, sigmaSpace);
+        bilateralFilter(tmp, smallImg, ksize, sigmaColor, sigmaSpace);
     }
+    Mat bigImg;
+    resize(smallImg, bigImg, size, 0, 0, INTER_LINEAR);
 
     imshow("Cartoonifier Cartoon", srcColor);
 
     dst.setTo(0);
-    srcColor.copyTo(dst, mask);
+    bigImg.copyTo(dst, mask);
     return;
 }
 
